@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-50 min-h-screen p-8">
+    <div class="max-w-6xl mx-auto space-y-8">
+        <!-- Header -->
+        <header class="text-center">
+            <h1 class="text-4xl font-bold text-gray-800 mb-2">Game Development Concepts</h1>
+            <p class="text-gray-600">Interactive demonstration of game loops and asset loading</p>
+        </header>
+
+        <!-- Game Loop Section -->
+        <div class="bg-white rounded-xl shadow-lg p-6">
+            <h2 class="text-2xl font-semibold text-gray-800 mb-6">Game Loop Demonstration</h2>
+            
+            <div class="grid md:grid-cols-2 gap-8">
+                <!-- Synchronous Loop -->
+                <div class="space-y-4">
+                    <div class="bg-gray-50 rounded-lg p-4">
+                        <h3 class="text-xl font-medium text-gray-700 mb-3">Synchronous Game Loop</h3>
+                        <canvas id="syncCanvas" class="bg-white border-2 border-gray-200 rounded-lg w-full" width="300" height="150"></canvas>
+                        <div class="flex items-center justify-between mt-4">
+                            <button onclick="toggleSyncLoop()" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg transition-colors">
+                                Start/Stop Sync Loop
+                            </button>
+                            <span class="text-gray-600">FPS: <span id="syncFPS" class="font-mono">0</span></span>
+                        </div>
+                    </div>
+                    <div class="bg-gray-800 rounded-lg p-4">
+                        <pre class="text-gray-300 text-sm overflow-x-auto">
+// Synchronous Game Loop
+function syncGameLoop() {
+    while (running) {
+        const now = Date.now();
+        update(now - lastTime);
+        render();
+        lastTime = now;
+    }
+}</pre>
+                    </div>
+                </div>
+
+                <!-- Asynchronous Loop -->
+                <div class="space-y-4">
+                    <div class="bg-gray-50 rounded-lg p-4">
+                        <h3 class="text-xl font-medium text-gray-700 mb-3">Asynchronous Game Loop</h3>
+                        <canvas id="asyncCanvas" class="bg-white border-2 border-gray-200 rounded-lg w-full" width="300" height="150"></canvas>
+                        <div class="flex items-center justify-between mt-4">
+                            <button onclick="toggleAsyncLoop()" class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg transition-colors">
+                                Start/Stop Async Loop
+                            </button>
+                            <span class="text-gray-600">FPS: <span id="asyncFPS" class="font-mono">0</span></span>
+                        </div>
+                    </div>
+                    <div class="bg-gray-800 rounded-lg p-4">
+                        <pre class="text-gray-300 text-sm overflow-x-auto">
+// Asynchronous Game Loop
+function asyncGameLoop(timestamp) {
+    if (!running) return;
+    
+    const deltaTime = timestamp - lastTime;
+    update(deltaTime);
+    render();
+    lastTime = timestamp;
+    
+    requestAnimationFrame(asyncGameLoop);
+}</pre>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Asset Loading Section -->
+        <div class="bg-white rounded-xl shadow-lg p-6">
+            <h2 class="text-2xl font-semibold text-gray-800 mb-6">Asset Loading Demonstration</h2>
+            
+            <div class="grid md:grid-cols-2 gap-8">
+                <!-- Asset Preview -->
+                <div class="space-y-4">
+                    <div class="bg-gray-50 rounded-lg p-4">
+                        <h3 class="text-xl font-medium text-gray-700 mb-3">Asset Preview</h3>
+                        <img id="catImage" src="cat.jpg" class="w-full h-48 object-cover rounded-lg mb-4" style="display: none">
+                        <button id="playSound" class="bg-purple-500 hover:bg-purple-600 text-white px-4 py-2 rounded-lg transition-colors w-full" style="display: none">
+                            Play Sound
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Loading Controls -->
+                <div class="space-y-4">
+                    <div class="bg-gray-50 rounded-lg p-4">
+                        <h3 class="text-xl font-medium text-gray-700 mb-3">Load Assets</h3>
+                        <button onclick="demonstrateAssetLoading()" class="bg-indigo-500 hover:bg-indigo-600 text-white px-4 py-2 rounded-lg transition-colors mb-4 w-full">
+                            Start Loading Assets
+                        </button>
+                        <div id="loadingIndicator" class="hidden">
+                            <div class="animate-pulse flex space-x-4 items-center">
+                                <div class="w-4 h-4 bg-indigo-400 rounded-full animate-bounce"></div>
+                                <div class="text-gray-600">Loading assets...</div>
+                            </div>
+                        </div>
+                        <div id="assetStatus" class="text-gray-600 space-y-2"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Game variables
+        let running = false;
+        let lastTime = 0;
+        let position = { x: 50, y: 75 };
+        let velocity = { x: 100, y: 50 };
+
+        // FPS tracking
+        let frameCount = 0;
+        let lastFPSUpdate = 0;
+        const FPS_UPDATE_INTERVAL = 500;
+
+        // Asset loading
+        const assets = {
+            image: null,
+            sound: null
+        };
+
+        // Game loops
+        function syncGameLoop() {
+            if (!running) return;
+            
+            const now = Date.now();
+            const deltaTime = now - lastTime;
+            
+            update(deltaTime / 1000);
+            render(document.getElementById('syncCanvas'));
+            
+            updateFPS(now, 'syncFPS');
+            
+            lastTime = now;
+            setTimeout(syncGameLoop, 16);
+        }
+
+        function asyncGameLoop(timestamp) {
+            if (!running) return;
+            
+            const deltaTime = (timestamp - lastTime) / 1000;
+            
+            update(deltaTime);
+            render(document.getElementById('asyncCanvas'));
+            
+            updateFPS(Date.now(), 'asyncFPS');
+            
+            lastTime = timestamp;
+            requestAnimationFrame(asyncGameLoop);
+        }
+
+        function update(deltaTime) {
+            position.x += velocity.x * deltaTime;
+            position.y += velocity.y * deltaTime;
+            
+            const canvas = document.getElementById('asyncCanvas');
+            
+            if (position.x < 0 || position.x > canvas.width) {
+                velocity.x *= -1;
+                position.x = Math.max(0, Math.min(position.x, canvas.width));
+            }
+            if (position.y < 0 || position.y > canvas.height) {
+                velocity.y *= -1;
+                position.y = Math.max(0, Math.min(position.y, canvas.height));
+            }
+        }
+
+        function render(canvas) {
+            const ctx = canvas.getContext('2d');
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            if (assets.image) {
+                ctx.drawImage(assets.image, position.x - 15, position.y - 15, 30, 30);
+            } else {
+                ctx.beginPath();
+                ctx.arc(position.x, position.y, 10, 0, Math.PI * 2);
+                ctx.fillStyle = 'blue';
+                ctx.fill();
+                ctx.closePath();
+            }
+        }
+
+        function updateFPS(now, elementId) {
+            frameCount++;
+            
+            if (now - lastFPSUpdate > FPS_UPDATE_INTERVAL) {
+                const fps = Math.round((frameCount * 1000) / (now - lastFPSUpdate));
+                document.getElementById(elementId).textContent = fps;
+                frameCount = 0;
+                lastFPSUpdate = now;
+            }
+        }
+
+        // Control functions
+        function toggleSyncLoop() {
+            running = !running;
+            if (running) {
+                lastTime = Date.now();
+                syncGameLoop();
+            }
+        }
+
+        function toggleAsyncLoop() {
+            running = !running;
+            if (running) {
+                lastTime = performance.now();
+                requestAnimationFrame(asyncGameLoop);
+            }
+        }
+
+        // Asset loading
+        async function loadImage() {
+            return new Promise((resolve, reject) => {
+                const img = new Image();
+                img.onload = () => resolve(img);
+                img.onerror = reject;
+                img.src = 'cat.jpg';
+            });
+        }
+
+        async function loadSound() {
+            return new Promise((resolve, reject) => {
+                const audio = new Audio('meow.wav');
+                audio.oncanplaythrough = () => resolve(audio);
+                audio.onerror = reject;
+                audio.load();
+            });
+        }
+
+        async function demonstrateAssetLoading() {
+            const loadingIndicator = document.getElementById('loadingIndicator');
+            const statusDiv = document.getElementById('assetStatus');
+            const catImage = document.getElementById('catImage');
+            const playSound = document.getElementById('playSound');
+            
+            loadingIndicator.classList.remove('hidden');
+            statusDiv.innerHTML = '';
+            catImage.style.display = 'none';
+            playSound.style.display = 'none';
+
+            try {
+                // Load image
+                statusDiv.innerHTML += '<div class="p-2 bg-blue-50 rounded">Loading image...</div>';
+                assets.image = await loadImage();
+                statusDiv.innerHTML += '<div class="p-2 bg-green-50 rounded">Image loaded!</div>';
+                catImage.style.display = 'block';
+
+                // Load sound
+                statusDiv.innerHTML += '<div class="p-2 bg-blue-50 rounded">Loading sound...</div>';
+                assets.sound = await loadSound();
+                statusDiv.innerHTML += '<div class="p-2 bg-green-50 rounded">Sound loaded!</div>';
+                playSound.style.display = 'block';
+
+                // Setup sound playback
+                playSound.onclick = () => assets.sound.play();
+
+            } catch (error) {
+                statusDiv.innerHTML += `<div class="p-2 bg-red-50 text-red-700 rounded">Error: ${error.message}</div>`;
+            } finally {
+                loadingIndicator.classList.add('hidden');
+            }
+        }
+    </script>
+</body>
+</html>
